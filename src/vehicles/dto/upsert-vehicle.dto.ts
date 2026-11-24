@@ -11,4 +11,5 @@ export class UpsertVehicleDto {
   @IsOptional() @IsArray() @ArrayMinSize(2) @ArrayMaxSize(2) @IsNumber({}, { each: true }) baseCoordinates?: [number, number];
   @Type(() => Number) @IsNumber({ maxDecimalPlaces: 2 }) @Min(0.1) @Max(100) efficiencyKmPerLiter: number;
   @Type(() => Number) @IsInt() @Min(0) @Max(1000000) fuelPriceClp: number;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(0) @Max(100) platformCommissionPercent?: number;
 }

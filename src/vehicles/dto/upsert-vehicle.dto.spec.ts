@@ -17,3 +17,15 @@ describe('UpsertVehicleDto base coordinates', () => {
     expect((await validate(dto)).some((error) => error.property === 'baseCoordinates')).toBe(true);
   });
 });
+
+describe('UpsertVehicleDto platform commission', () => {
+  it('accepts a commission percentage between 0 and 100', async () => {
+    const dto = Object.assign(validVehicle(), { platformCommissionPercent: 25 });
+    expect(await validate(dto)).toHaveLength(0);
+  });
+
+  it('rejects commission percentages over 100', async () => {
+    const dto = Object.assign(validVehicle(), { platformCommissionPercent: 101 });
+    expect((await validate(dto)).some((error) => error.property === 'platformCommissionPercent')).toBe(true);
+  });
+});

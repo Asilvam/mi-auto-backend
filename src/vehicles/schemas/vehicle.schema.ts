@@ -35,6 +35,9 @@ export class Vehicle {
   @Prop({ required: true, min: 0, max: 1000000 })
   fuelPriceClp: number;
 
+  @Prop({ default: 25, min: 0, max: 100 })
+  platformCommissionPercent: number;
+
   @Prop({ default: true })
   isPrimary: boolean;
 }

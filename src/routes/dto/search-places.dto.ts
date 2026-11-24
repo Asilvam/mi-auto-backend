@@ -1,5 +1,5 @@
 import { Transform } from 'class-transformer';
-import { IsString, MaxLength, MinLength } from 'class-validator';
+import { IsIn, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 
 export class SearchPlacesDto {
   @Transform(({ value }) => typeof value === 'string' ? value.trim() : value)
@@ -7,4 +7,8 @@ export class SearchPlacesDto {
   @MinLength(3)
   @MaxLength(120)
   q: string;
+
+  @IsOptional()
+  @IsIn(['quintero', 'valparaiso'])
+  scope?: 'quintero' | 'valparaiso';
 }

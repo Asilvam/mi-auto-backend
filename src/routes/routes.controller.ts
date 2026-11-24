@@ -13,7 +13,7 @@ export class RoutesController {
 
   @Get('places')
   searchPlaces(@Query() query: SearchPlacesDto) {
-    return this.routes.searchPlaces(query.q);
+    return this.routes.searchPlaces(query.q, query.scope ?? 'quintero');
   }
 
   @Post('plan')
