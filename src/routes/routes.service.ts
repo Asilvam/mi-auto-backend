@@ -5,7 +5,7 @@ import { VehiclesService } from '../vehicles/vehicles.service';
 import { rankRoutes, scoreRoute } from './route-scoring';
 import { PlanRouteDto } from './dto/plan-route.dto';
 
-type MapboxFeature = { geometry?: { coordinates?: [number, number] }; properties?: { name?: string; full_address?: string }; place_name?: string };
+type MapboxFeature = { id?: string; geometry?: { coordinates?: [number, number] }; properties?: { name?: string; full_address?: string; place_formatted?: string }; place_name?: string };
 type MapboxRoute = { distance: number; duration: number; geometry: { type: 'LineString'; coordinates: [number, number][] }; legs?: Array<{ distance: number; duration: number }> };
 
 @Injectable()
@@ -13,6 +13,33 @@ export class RoutesService {
   private readonly token?: string;
   constructor(config: ConfigService, private readonly vehicles: VehiclesService) {
     this.token = config.get<string>('MAPBOX_ACCESS_TOKEN') || undefined;
+  }
+
+  async searchPlaces(searchText: string) {
+    if (!this.token) throw new ServiceUnavailableException('Configura MAPBOX_ACCESS_TOKEN en el backend para buscar ubicaciones.');
+    const text = searchText.trim();
+    if (text.length < 3) throw new BadRequestException('Escribe al menos 3 caracteres para buscar una ubicación.');
+    const query = new URLSearchParams({
+      q: `${text}, Quintero, Valparaíso, Chile`,
+      country: 'cl',
+      proximity: '-71.5333,-32.7833',
+      limit: '5',
+      access_token: this.token,
+    });
+    const response = await fetch(`https://api.mapbox.com/search/geocode/v6/forward?${query}`);
+    if (!response.ok) throw new ServiceUnavailableException('Mapbox no pudo buscar las ubicaciones.');
+    const data = await response.json() as { features?: MapboxFeature[] };
+    return (data.features ?? []).flatMap((feature) => {
+      const coordinates = feature.geometry?.coordinates;
+      const fullAddress = feature.properties?.full_address ?? feature.place_name ?? feature.properties?.name;
+      if (!coordinates || coordinates.length < 2 || !fullAddress) return [];
+      return [{
+        id: feature.id ?? `${coordinates[0]},${coordinates[1]}`,
+        name: feature.properties?.name ?? fullAddress,
+        fullAddress,
+        coordinates,
+      }];
+    });
   }
 
   async plan(userId: Types.ObjectId, dto: PlanRouteDto) {

@@ -37,4 +37,24 @@ describe('RoutesService', () => {
     expect(result.preferences.economical?.stopOrder).toEqual(['Start', 'StopB', 'StopA', 'Destination']);
     expect(result.tollsEstimated).toBe(false);
   });
+
+  it('returns selectable address suggestions scoped to Quintero', async () => {
+    const config = { get: jest.fn(() => 'test-mapbox-token') } as unknown as ConfigService;
+    const vehicles = {} as VehiclesService;
+    const service = new RoutesService(config, vehicles);
+    const fetchMock = jest.spyOn(global, 'fetch').mockResolvedValue(response({ features: [
+      { id: 'address.1', properties: { name: 'Plaza de Quintero', full_address: 'Plaza de Quintero, Quintero, Chile' }, geometry: { coordinates: [-71.53, -32.78] } },
+      { id: 'missing.geometry', properties: { name: 'Invalid result' } },
+    ] }));
+
+    const result = await service.searchPlaces('Plaza');
+
+    expect(fetchMock.mock.calls[0][0]).toContain('q=Plaza%2C+Quintero');
+    expect(result).toEqual([{
+      id: 'address.1',
+      name: 'Plaza de Quintero',
+      fullAddress: 'Plaza de Quintero, Quintero, Chile',
+      coordinates: [-71.53, -32.78],
+    }]);
+  });
 });

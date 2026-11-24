@@ -27,6 +27,7 @@ La API escucha en `http://localhost:3000`; MongoDB debe estar disponible en la U
 - `POST /api/trips`: registra una ruta, calcula combustible, peajes y gasto por persona.
 - `PATCH /api/trips/:id/route`: recalcula la ruta de un delivery activo con nuevas paradas.
 - `PATCH /api/trips/:id/complete`: finaliza un delivery.
+- `GET /api/routes/places?q=...`: busca sugerencias de origen/destino en Quintero para seleccionar antes de calcular.
 - `POST /api/routes/plan`: geocodifica ubicaciones, ordena paradas y devuelve alternativas.
 - `GET /api/pricing/delivery`: consulta los tramos y tarifa actual de delivery.
 - `PUT /api/pricing/delivery`: guarda los tramos horarios de delivery del usuario.
