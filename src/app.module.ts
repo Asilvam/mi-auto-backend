@@ -6,6 +6,8 @@ import { AuthModule } from './auth/auth.module';
 import { TripsModule } from './trips/trips.module';
 import { UsersModule } from './users/users.module';
 import { VehiclesModule } from './vehicles/vehicles.module';
+import { PricingModule } from './pricing/pricing.module';
+import { RoutesModule } from './routes/routes.module';
 
 @Module({
   imports: [
@@ -28,6 +30,8 @@ import { VehiclesModule } from './vehicles/vehicles.module';
     AuthModule,
     UsersModule,
     VehiclesModule,
+    PricingModule,
+    RoutesModule,
     TripsModule,
   ],
 })

@@ -14,6 +14,9 @@ export class Trip {
   @Prop({ required: true, enum: ['shared', 'delivery'] })
   type: string;
 
+  @Prop({ required: true, enum: ['planned', 'in_progress', 'completed'], default: 'completed' })
+  status: string;
+
   @Prop({ required: true, trim: true, maxlength: 160 })
   origin: string;
 
@@ -32,6 +35,21 @@ export class Trip {
   @Prop({ min: 0, default: 0 })
   otherCostsClp: number;
 
+  @Prop({ min: 1, default: 1 })
+  participantCount: number;
+
+  @Prop({ min: 0, default: 0 })
+  costPerParticipantClp: number;
+
+  @Prop({ min: 0, default: 0 })
+  deliveryFeeClp: number;
+
+  @Prop({ type: [String], default: [] })
+  stops: string[];
+
+  @Prop({ type: Object })
+  routeGeometry?: { type: 'LineString'; coordinates: [number, number][] };
+
   @Prop({ required: true, min: 0 })
   fuelCostClp: number;
 
@@ -39,7 +57,10 @@ export class Trip {
   totalCostClp: number;
 
   @Prop({ required: true, default: Date.now })
-  completedAt: Date;
+  startedAt: Date;
+
+  @Prop()
+  completedAt?: Date;
 }
 
 export const TripSchema = SchemaFactory.createForClass(Trip);

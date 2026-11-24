@@ -1,8 +1,9 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { Types } from 'mongoose';
 import { AuthenticatedRequest, JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { CreateTripDto } from './dto/create-trip.dto';
+import { UpdateActiveRouteDto } from './dto/update-active-route.dto';
 import { TripsService } from './trips.service';
 
 @Controller('trips')
@@ -18,5 +19,15 @@ export class TripsController {
   @Get()
   async list(@CurrentUser() user: AuthenticatedRequest['user']) {
     return this.trips.list(new Types.ObjectId(user.id));
+  }
+
+  @Patch(':id/route')
+  updateActiveRoute(@Param('id') id: string, @Body() dto: UpdateActiveRouteDto, @CurrentUser() user: AuthenticatedRequest['user']) {
+    return this.trips.updateActiveDelivery(new Types.ObjectId(user.id), id, dto);
+  }
+
+  @Patch(':id/complete')
+  completeDelivery(@Param('id') id: string, @CurrentUser() user: AuthenticatedRequest['user']) {
+    return this.trips.completeDelivery(new Types.ObjectId(user.id), id);
   }
 }
