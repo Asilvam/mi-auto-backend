@@ -45,25 +45,41 @@ export class RoutesService {
   async plan(userId: Types.ObjectId, dto: PlanRouteDto) {
     if (!this.token) throw new ServiceUnavailableException('Configura MAPBOX_ACCESS_TOKEN en el backend para calcular rutas.');
     const vehicle = await this.vehicles.getPrimary(userId);
-    const labels = [dto.origin, ...(dto.stops ?? []), dto.destination];
+    const isDelivery = dto.type === 'delivery';
+    if (isDelivery && !(dto.stops?.length)) throw new BadRequestException('Agrega al menos una parada para calcular el delivery.');
+    const labels = isDelivery ? [dto.origin, ...(dto.stops ?? [])] : [dto.origin, dto.destination, dto.origin];
     if (labels.length > 12) throw new BadRequestException('Mapbox admite hasta 12 ubicaciones por ruta.');
-    const locations = await Promise.all(labels.map((label) => this.geocode(label)));
-    const ordered = await this.optimize(locations);
-    const alternatives = await this.directions(ordered);
-    const evaluated = alternatives.map((route, index) => ({
-      id: `route-${index + 1}`,
-      ...scoreRoute(route.distance, route.duration, vehicle.efficiencyKmPerLiter, vehicle.fuelPriceClp, dto.tollsClp ?? 0, dto.otherCostsClp ?? 0),
-      geometry: route.geometry,
-      stopOrder: ordered.map((location) => location.label),
+    const savedBaseAddress = vehicle.baseAddress?.trim();
+    const savedBaseCoordinates = vehicle.baseCoordinates?.length === 2 ? vehicle.baseCoordinates as [number, number] : undefined;
+    const locations = await Promise.all(labels.map((label) => {
+      if (savedBaseCoordinates && savedBaseAddress && label.trim() === savedBaseAddress) {
+        return Promise.resolve({ label, coordinates: savedBaseCoordinates });
+      }
+      return this.geocode(label);
     }));
+    const orderedStops = isDelivery ? await this.optimizeDelivery(locations) : locations;
+    const routeLocations = isDelivery
+      ? [...orderedStops, orderedStops[0]]
+      : orderedStops;
+    const alternatives = await this.directions(routeLocations);
+    const evaluated = alternatives.map((route, index) => {
+      const distanceMeters = Math.round(route.distance);
+      const durationSeconds = Math.round(route.duration);
+      return {
+      id: `route-${index + 1}`,
+      ...scoreRoute(distanceMeters, durationSeconds, vehicle.efficiencyKmPerLiter, vehicle.fuelPriceClp, dto.tollsClp ?? 0, dto.otherCostsClp ?? 0),
+      geometry: route.geometry,
+      stopOrder: routeLocations.map((location) => location.label),
+      };
+    });
     const ranked = rankRoutes(evaluated);
     return {
       provider: 'mapbox',
-      optimizedStops: (dto.stops?.length ?? 0) > 0,
+      optimizedStops: isDelivery && (dto.stops?.length ?? 0) > 1,
       preferences: { economical: ranked.economical, fastest: ranked.fastest },
       alternatives: ranked.routes,
       tollsEstimated: false,
-      notice: 'Los peajes no están incluidos automáticamente; ingresa su costo para compararlos.',
+      notice: `${isDelivery ? 'Las entregas se ordenan antes de volver al punto base. ' : 'La ruta considera ida y regreso al punto base. '}Los peajes no están incluidos automáticamente; ingresa su costo para compararlos.`,
     };
   }
 
@@ -84,11 +100,11 @@ export class RoutesService {
     return { label, coordinates };
   }
 
-  private async optimize(locations: Array<{ label: string; coordinates: [number, number] }>) {
+  private async optimizeDelivery(locations: Array<{ label: string; coordinates: [number, number] }>) {
     if (locations.length < 3) return locations;
     const coordinates = locations.map((location) => location.coordinates.join(',')).join(';');
     const query = new URLSearchParams({
-      source: 'first', destination: 'last', roundtrip: 'false', geometries: 'geojson',
+      source: 'first', destination: 'any', roundtrip: 'true', geometries: 'geojson',
       access_token: this.token!,
     });
     const response = await fetch(`https://api.mapbox.com/optimized-trips/v1/mapbox/driving/${coordinates}?${query}`);

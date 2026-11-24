@@ -35,6 +35,20 @@ describe('AuthService Google sign-in', () => {
     expect(result.refreshToken).not.toBe('access-jwt');
   });
 
+  it('sets a new Google login session to expire 30 days later by default', async () => {
+    const fixedNow = 1_800_000_000_000;
+    jest.spyOn(Date, 'now').mockReturnValue(fixedNow);
+    jest.spyOn(OAuth2Client.prototype, 'verifyIdToken').mockImplementation(async () => ({
+      getPayload: () => ({ sub: 'google-subject', email: user.email, email_verified: true, name: user.name }),
+    }) as never);
+    const service = new AuthService(jwt as never, config as never, users as never, sessions as never);
+
+    const result = await service.loginWithGoogle('google-id-token');
+
+    expect(result.expiresAt.getTime()).toBe(fixedNow + 30 * 24 * 60 * 60 * 1000);
+    expect(sessions.create).toHaveBeenCalledWith(expect.objectContaining({ expiresAt: result.expiresAt }));
+  });
+
   it('rejects an invalid Google credential', async () => {
     jest.spyOn(OAuth2Client.prototype, 'verifyIdToken').mockImplementation(() => Promise.reject(new Error('invalid token')) as never);
     const service = new AuthService(jwt as never, config as never, users as never, sessions as never);

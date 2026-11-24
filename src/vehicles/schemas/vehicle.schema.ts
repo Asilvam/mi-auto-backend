@@ -23,6 +23,12 @@ export class Vehicle {
   @Prop({ enum: ['gasoline', 'diesel', 'hybrid', 'electric', 'other'], default: 'gasoline' })
   fuelType: string;
 
+  @Prop({ trim: true, maxlength: 160, default: '' })
+  baseAddress: string;
+
+  @Prop({ type: [Number], default: undefined })
+  baseCoordinates?: [number, number];
+
   @Prop({ required: true, min: 0.1, max: 100 })
   efficiencyKmPerLiter: number;
 
